@@ -1,0 +1,57 @@
+═══════════════════════════════════════════════════════════
+  BlackHole Ultra Downloader — ابدأ من هنا
+═══════════════════════════════════════════════════════════
+
+هذه حزمة الكود الكاملة. لا تحتاج أي رابط عام ولا نفق ولا حساب.
+
+
+■ Windows (الأسهل)
+   1) فُكّ الضغط في مكان ثابت مثل: C:\BlackHoleUltra
+   2) انقر مرتين على: START-LOCAL.bat
+   3) سيفتح المتصفح على: http://localhost:3000
+   الملف يثبّت تلقائياً Node.js و yt-dlp و FFmpeg إن كانت ناقصة،
+   ثم npm ci ثم build ثم يشغّل الخادم.
+
+■ macOS / Linux
+   bash scripts/local-start.sh
+   المتطلبات: Node.js 20+ · yt-dlp · ffmpeg/ffprobe
+
+■ يدوياً (كل الأنظمة)
+   npm ci
+   npm run build
+   npm start
+   ثم افتح http://localhost:3000
+
+
+■ التثبيت كتطبيق
+   • على نفس الجهاز: افتح http://localhost:3000 ← زر «تثبيت التطبيق»
+     (localhost اتصال آمن، فالتثبيت يعمل بلا HTTPS)
+   • من الجوال على نفس الواي فاي: http://<IP-جهازك>:3000 يعمل،
+     لكن التثبيت كتطبيق يحتاج HTTPS ← انظر docs/one-click.md (Tailscale،
+     أو START-WINDOWS.bat الذي يجهّزه تلقائياً).
+
+
+■ محتويات الحزمة
+   src/        كود التطبيق (Next.js + TypeScript)
+   public/     الأيقونات + Service Worker (PWA)
+   scripts/    سكربتات التشغيل والنشر
+   tests/      اختبارات الوحدة والتكامل والواجهة
+   docs/       الدليل الكامل + تقارير الجولات + بطاقة التثبيت
+   flutter_app/ نسخة Flutter تجريبية (اختيارية)
+   bin/        ضع هنا yt-dlp.exe و ffmpeg.exe إن أردت نسخة محمولة
+
+
+■ ملاحظات
+   • محلي أولاً: الملفات تُنزَّل على جهازك، وقاعدة البيانات data/blackhole.db
+     تُنشأ تلقائياً عند أول تشغيل. لا مفاتيح API ولا .env.
+   • الاستخدام مسؤول: نزّل فقط ما تملك حق تحميله. لا تجاوز لأي DRM.
+   • لمنع الوصول من الشبكة: شغّل على 127.0.0.1 فقط
+       Linux:   HOSTNAME=127.0.0.1 npm start
+       Windows: set HOSTNAME=127.0.0.1 ^&^& npm start
+
+
+■ التحقق
+   npm run typecheck · npm run lint · npm test · npm run build
+   npm run test:browsers   (بعد npm start + npx playwright install)
+
+═══════════════════════════════════════════════════════════

@@ -1,0 +1,86 @@
+{
+  "base": "https://28a7341590bbf1.lhr.life",
+  "generatedAt": "2026-10-30T23:15:38.841Z",
+  "engines": [
+    {
+      "engine": "chromium",
+      "label": "Chrome/Edge/Opera (Blink)",
+      "crashed": true,
+      "error": "Error: apiRequestContext.get: socket hang up (ECONNRESET)\nCall log:\n  - → GET https://28a7341590bbf1.lhr.life/icons/maskable-512.png\n    - user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36\n    - accept: */*\n    - accept-encoding: gzip,deflate,br\n"
+    },
+    {
+      "engine": "firefox",
+      "label": "Firefox (Gecko)",
+      "crashed": true,
+      "error": "TimeoutError: apiRequestContext.get: Timeout 30000ms exceeded.\nCall log:\n  - → GET https://28a7341590bbf1.lhr.life/icons/icon-512.png\n    - user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0\n    - accept: */*\n    - accept-encoding: gzip,deflate,br\n  - ← 200 OK\n    - accept-ranges: bytes\n    - cache-control: public, max-age=0\n    - last-modified: Fri, 30 Oct 2026 22:16:15 GMT\n    - etag: W/\"fb2c-1a18ee2919d\"\n    - content-type: image/png\n    - content-length: 64300\n    - date: Fri, 30 Oct 2026 23:15:58 GMT\n    - connection: keep-alive\n    - keep-alive: timeout=5\n    - x-backend-addr: 136.87.96.159:34948\n"
+    },
+    {
+      "engine": "webkit",
+      "label": "Safari (WebKit)",
+      "crashed": true,
+      "error": "TimeoutError: apiRequestContext.get: Timeout 30000ms exceeded.\nCall log:\n  - → GET https://28a7341590bbf1.lhr.life/icons/icon-512.png\n    - user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15\n    - accept: */*\n    - accept-encoding: gzip,deflate,br\n  - ← 200 OK\n    - accept-ranges: bytes\n    - cache-control: public, max-age=0\n    - last-modified: Fri, 30 Oct 2026 22:16:15 GMT\n    - etag: W/\"fb2c-1a18ee2919d\"\n    - content-type: image/png\n    - content-length: 64300\n    - date: Fri, 30 Oct 2026 23:16:35 GMT\n    - connection: keep-alive\n    - keep-alive: timeout=5\n    - x-backend-addr: 136.87.96.159:34948\n"
+    }
+  ],
+  "devices": [
+    {
+      "device": "Pixel 7",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    },
+    {
+      "device": "Galaxy S24",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    },
+    {
+      "device": "iPhone 15",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    },
+    {
+      "device": "iPad Pro 11",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    },
+    {
+      "device": "Pixel 7 landscape",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    },
+    {
+      "device": "iPad Pro 11 landscape",
+      "metrics": {
+        "overflow": 0,
+        "font": 16,
+        "touchTarget": 36,
+        "tapHighlight": "rgba(0, 0, 0, 0)"
+      },
+      "ok": true
+    }
+  ]
+}

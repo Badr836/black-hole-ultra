@@ -1,0 +1,319 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #050308;
+  --bg-2: #0b0712;
+  --card: #110a1c;
+  --card-2: #170e26;
+  --border: #2a1a44;
+  --violet: #8b5cf6;
+  --violet-2: #a78bfa;
+  --violet-glow: rgba(139, 92, 246, 0.35);
+  --text: #ece6f7;
+  --muted: #9a8fb8;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(800px 500px at -10% 110%, rgba(109, 40, 217, 0.12), transparent 60%),
+    var(--bg);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3b2563 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #3b2563;
+  border-radius: 8px;
+}
+
+.bh-card {
+  background: linear-gradient(180deg, var(--card) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.bh-input {
+  background: #0a0612;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.bh-input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-glow);
+}
+.bh-input::placeholder {
+  color: #6e6389;
+}
+select.bh-input option {
+  background: #0a0612;
+}
+
+.bh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  transition: transform 0.08s, filter 0.15s, background 0.15s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bh-btn:active {
+  transform: translateY(1px);
+}
+.bh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bh-btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  box-shadow: 0 6px 24px -8px var(--violet-glow);
+}
+.bh-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.bh-btn-ghost {
+  background: #130c20;
+  border-color: var(--border);
+  color: var(--text);
+}
+.bh-btn-ghost:hover:not(:disabled) {
+  background: #1b1130;
+}
+.bh-btn-danger {
+  background: #2a0f1a;
+  border-color: #5b1d33;
+  color: #fda4af;
+}
+.bh-btn-danger:hover:not(:disabled) {
+  background: #3a1322;
+}
+.bh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: #130c20;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.bh-icon-btn:hover:not(:disabled) {
+  background: #1f1437;
+}
+.bh-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bh-chip {
+  border: 1px solid var(--border);
+  background: #0f0919;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bh-chip:hover {
+  border-color: #4c3178;
+  color: var(--text);
+}
+.bh-chip.active {
+  background: linear-gradient(135deg, #5b21b6, #7c3aed);
+  color: white;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px var(--violet-glow);
+}
+
+.bh-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #1a1128;
+  overflow: hidden;
+}
+.bh-progress > div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6d28d9, #a855f7, #c084fc);
+  background-size: 200% 100%;
+  transition: width 0.4s ease;
+}
+.bh-progress.animated > div {
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.bh-blackhole {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #000 0 38%, #7c3aed 40%, #a855f7 52%, transparent 60%);
+  box-shadow: 0 0 30px 4px rgba(168, 85, 247, 0.45), inset 0 0 12px #000;
+  animation: spin 9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-in {
+  animation: fadeIn 0.25s ease;
+}
+
+/* ------------------------------------------------------------------ compat --
+ * Cross-browser hardening (Safari/iOS, Firefox, older Chromium, Windows Edge).
+ * Everything here is a graceful fallback: modern engines ignore what they don't
+ * need, and no rule hides content if a feature is missing.
+ * -------------------------------------------------------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Chrome on Android / Samsung Internet */
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh; /* iOS < 15.4 has no dvh → the vh line above wins */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+  /* Installed (standalone) mode on notched devices */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Buttons/links: no double-tap zoom delay, no sticky hover on touch devices. */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+@media (hover: none) {
+  .bh-btn:hover,
+  .bh-chip:hover {
+    filter: none;
+  }
+}
+
+/* iOS Safari zooms the page when focusing an input below 16px. */
+@media (max-width: 820px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* `backdrop-filter` without the -webkit prefix is ignored by Safari ≤ 15.3;
+   without the blur the overlay would be transparent, so fall back to a solid
+   translucent background instead of a broken see-through sheet. */
+@supports not ((-webkit-backdrop-filter: blur(4px)) or (backdrop-filter: blur(4px))) {
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgb(0 0 0 / 0.86) !important;
+  }
+}
+
+/* Firefox draws its own select arrow inconsistently; keep the native one but
+   guarantee readable colours on both light and dark system themes. */
+select,
+option {
+  color-scheme: dark;
+}
+
+/* Media never overflows its card (Safari/old Android quirks). */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Scrollbars: WebKit + Firefox (the standard properties are set at the top). */
+@supports not (scrollbar-width: thin) {
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Respect reduced motion (iOS "Reduce Motion", Windows animation settings). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print: hide controls, keep the queue readable. */
+@media print {
+  .bh-btn,
+  .bh-icon-btn,
+  .bh-chip,
+  .bh-blackhole {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* الحقول الطويلة تُقصّ بنقاط بدل قطع الحروف (خصوصاً placeholder على الجوال) */
+input,
+textarea {
+  text-overflow: ellipsis;
+}

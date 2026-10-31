@@ -1,0 +1,22 @@
+# Render Blueprint — نشر «بلاك هول الترا» بدون أي تعديل على كود التطبيق.
+# الملف يصف الاستضافة فقط: صورة Docker موجودة أصلاً في deploy/Dockerfile.
+services:
+  - type: web
+    name: black-hole-ultra
+    runtime: docker
+    plan: free                     # مجاني. ملاحظة صادقة: الخطة المجانية لا تدعم قرصاً دائماً،
+    region: frankfurt              # لذلك قاعدة SQLite في /app/data تُفقد عند إعادة النشر أو الاستيقاظ.
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NODE_ENV
+        value: production
+      # بيانات التطبيق محليّة داخل الحاوية. الأسرار لا تُوضع هنا.
+    # disk:                        # القرص الدائم مدفوع على Render — فعّله إن أردت بقاء البيانات:
+    #   name: black-hole-data
+    #   mountPath: /app/data
+    #   sizeGB: 1

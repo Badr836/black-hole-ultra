@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-10-30T21:53:30.888Z",
+  "base": "http://127.0.0.1:3000",
+  "download": true,
+  "note": "نتائج فعلية من هذا الجهاز/الشبكة — 429 أو طلب كوكيز سلوك منصة لا خطأ في التطبيق.",
+  "results": [
+    {
+      "platform": "TikTok",
+      "url": "https://www.tiktok.com/@scout2015/video/6718335390845095173",
+      "verdict": "ok",
+      "detail": "3 صيغة متاحة",
+      "title": "Scramble up ur name & I’ll try to guess it😍❤️ #foryoupage #petsoftikt...",
+      "elapsedMs": 1331,
+      "downloadStatus": "completed",
+      "fileBytes": 2512584,
+      "probed": "\"mov,mp4,m4a,3gp,3g2,mj2\",10.495011"
+    },
+    {
+      "platform": "X (Twitter)",
+      "url": "https://x.com/SpaceX/status/1732824684683784516",
+      "verdict": "ok",
+      "detail": "1 صيغة متاحة",
+      "title": "At dawn from the gateway to Mars, the launch of Starship’s second flight test",
+      "elapsedMs": 583,
+      "downloadStatus": "completed",
+      "fileBytes": 21193311,
+      "probed": "\"mov,mp4,m4a,3gp,3g2,mj2\",114.368000"
+    },
+    {
+      "platform": "Instagram",
+      "url": "https://www.instagram.com/p/BT6E2wBFk6L/",
+      "verdict": "rate-limited",
+      "detail": "المنصة تردّ بـ429 من عنوان IP هذا (حدّ مؤقت).",
+      "elapsedMs": 90041
+    }
+  ]
+}

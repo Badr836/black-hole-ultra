@@ -1,0 +1,32 @@
+# dependencies / build
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# BlackHole: local binaries (yt-dlp / ffmpeg) — not committed
+bin/
+
+# local runtime data (SQLite database, downloads) — never commit
+data/
+*.db
+*.db-wal
+*.db-shm
+*.part
+*.ytdl
+
+# env / secrets
+.env
+.env.local
+cookies.txt
+
+# flutter
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/bin/
+flutter_app/.flutter-plugins*
+
+# OS junk
+.DS_Store
+Thumbs.db
