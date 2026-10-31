@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# تشغيل الخادم على المنفذ 3000 — إعداد تشغيل فقط.
+# تشغيل الخادم على المنفذ 3000 — إعداد تشغيل فقط، لا تعديل على كود التطبيق.
 cd /workspaces/black-hole-ultra || exit 1
-export PORT=3000
-export HOSTNAME=0.0.0.0
+export PORT=3000 HOSTNAME=0.0.0.0
 pkill -f "next start" 2>/dev/null || true
+sleep 1
 mkdir -p data
-[ -d .next ] || npm run build
-nohup npx next start -H 0.0.0.0 -p 3000 > /tmp/app.log 2>&1 &
-sleep 5
-curl -s -o /dev/null -w "health:%{http_code}\n" http://127.0.0.1:3000/api/health || true
+[ -d .next ] || npm run build > /tmp/build.log 2>&1
+setsid nohup npx next start -H 0.0.0.0 -p 3000 > /tmp/app.log 2>&1 < /dev/null &
+disown 2>/dev/null || true
+echo "start.sh launched pid $!"
