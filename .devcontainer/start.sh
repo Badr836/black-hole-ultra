@@ -11,8 +11,11 @@ done
 [ -f .next/BUILD_ID ] || npm run build > /tmp/build.log 2>&1
 
 bash .devcontainer/tools.sh >/dev/null 2>&1 || true
+# Free the port no matter which process name holds it (next-server survives a
+# plain pkill -f "next start" and then the new server dies with EADDRINUSE).
+command -v fuser >/dev/null && fuser -k 3000/tcp 2>/dev/null || true
 pkill -f "next start" 2>/dev/null || true
-sleep 1
+sleep 2
 mkdir -p data
 setsid nohup npx next start -H 0.0.0.0 -p 3000 > /tmp/app.log 2>&1 < /dev/null &
 echo "$(date -u) started pid $!" >> /tmp/start-history.log
