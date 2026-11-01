@@ -10,6 +10,7 @@ for i in $(seq 1 60); do
 done
 [ -f .next/BUILD_ID ] || npm run build > /tmp/build.log 2>&1
 
+bash .devcontainer/tools.sh >/dev/null 2>&1 || true
 pkill -f "next start" 2>/dev/null || true
 sleep 1
 mkdir -p data
