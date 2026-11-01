@@ -104,3 +104,33 @@ test("YouTube 403 media refusal becomes actionable Arabic guidance", () => {
   );
   assert.equal(other, "unable to download video data: HTTP Error 403: Forbidden");
 });
+
+test("YouTube bot-check is reported as a per-video gate, not as login/age", () => {
+  const message = friendlyDownloadError(
+    "ERROR: [youtube] ZBhXu3ueGaA: Sign in to confirm you’re not a bot. This helps protect our community. Use --cookies-from-browser or --cookies for the authentication.",
+    "https://youtu.be/ZBhXu3ueGaA",
+  );
+  // It must name the real cause…
+  assert.match(message, /لست روبوتاً/);
+  assert.match(message, /LOGIN_REQUIRED/);
+  // …make clear other videos still work (no false "IP is banned" claim)…
+  assert.match(message, /فيديوهات أخرى/);
+  // …and point to the only compliant remedy.
+  assert.match(message, /الكوكيز/);
+  // It must not masquerade as an age gate.
+  assert.doesNotMatch(message, /تأكيد العمر/);
+});
+
+test("the same wording on a non-YouTube host stays a login message", () => {
+  const message = friendlyDownloadError("Please sign in to continue", "https://vimeo.com/123");
+  assert.match(message, /تسجيل الدخول/);
+  assert.doesNotMatch(message, /لست روبوتاً/);
+});
+
+test("a genuine age gate still says age", () => {
+  const message = friendlyDownloadError(
+    "ERROR: [youtube] xyz: Sign in to confirm your age. This video may be inappropriate for some users.",
+    "https://youtu.be/xyz",
+  );
+  assert.match(message, /العمر/);
+});

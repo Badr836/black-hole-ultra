@@ -58,8 +58,11 @@ const INFO: Record<FailureCode, Omit<FailureInfo, "code">> = {
     retryable: true,
   },
   datacenter_ip: {
-    label: "حظر عنوان مركز بيانات",
-    hint: "المصدر يرفض عناوين الخوادم (فحص «لست روبوتاً»). الحلول المشروعة: كوكيز جلستك من الإعدادات، أو تشغيل التطبيق من شبكة منزلية. لا يستخدم التطبيق وكلاء ولا تجاوزاً.",
+    // Named after the *symptom*, because the live evidence shows this is a
+    // per-request bot gate, not a blanket ban of the hosting IP: other videos
+    // from the same machine still download.
+    label: "فحص «لست روبوتاً» من المصدر",
+    hint: "المصدر رفض هذا الطلب تحديداً بفحص بشري. بعض المحتوى الآخر ينجح من نفس الجهاز. الحلول المشروعة: كوكيز جلستك من الإعدادات، أو شبكة أخرى. لا يستخدم التطبيق وكلاء ولا تجاوزاً.",
     retryable: false,
   },
   auth_required: {

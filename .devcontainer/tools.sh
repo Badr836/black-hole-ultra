@@ -37,6 +37,23 @@ if [ ! -x "$APP/bin/N_m3u8DL-RE" ]; then
   fi
 fi
 
+# 3b) Deno: محرك JavaScript الذي يحتاجه yt-dlp لفكّ تحديات يوتيوب (EJS).
+#     بدونه يحذّر yt-dlp بأن الاستخراج «مهجور» وقد تنقص صيغ. مجاني ومفتوح المصدر.
+if ! command -v deno >/dev/null; then
+  log "installing deno"
+  durl=$(curl -s https://api.github.com/repos/denoland/deno/releases/latest \
+         | grep -o 'https://[^"]*x86_64-unknown-linux-gnu.zip' | head -1)
+  if [ -n "${durl:-}" ]; then
+    tmpd=$(mktemp -d)
+    if curl -sSL "$durl" -o "$tmpd/deno.zip"; then
+      command -v unzip >/dev/null || sudo apt-get install -y -qq unzip >/dev/null 2>&1
+      (cd "$tmpd" && unzip -o -q deno.zip) && sudo install -m 755 "$tmpd/deno" /usr/local/bin/deno && log "deno installed"
+    fi
+    rm -rf "$tmpd"
+  fi
+fi
+command -v deno >/dev/null && log "deno $(deno --version | head -1)"
+
 # 4) ملخّص
 for b in yt-dlp gallery-dl ffmpeg ffprobe aria2c; do printf '%s=%s ' "$b" "$(command -v "$b" || echo MISSING)" | tee -a "$LOG"; done
 echo | tee -a "$LOG"

@@ -117,8 +117,25 @@ export function friendlyDownloadError(raw: string, url: string): string {
   if (/video unavailable|private video|members-only|removed by the uploader/i.test(clean)) {
     return "المحتوى غير متاح (خاص أو محذوف أو مقيد بالعضوية). لا يتجاوز التطبيق أي حماية تقنية.";
   }
-  if (/sign in to confirm|confirm your age|age-restricted/i.test(clean)) {
-    return "الموقع يطلب تسجيل الدخول أو تأكيد العمر. أضف ملف كوكيز من الإعدادات إن كان لديك حق الوصول إلى هذا المحتوى.";
+  // YouTube's *per-video* bot gate. Verified live on this deployment: the same
+  // server+IP downloads other videos fine while this one answers
+  // `playabilityStatus: LOGIN_REQUIRED — "Sign in to confirm you're not a bot"`,
+  // so it is neither a broken extractor, nor a blanket IP ban, nor an age gate.
+  // Say that, instead of the generic "login or age verification" line.
+  if (/not a bot|confirm you[’']?re not a bot|confirm you are not a bot/i.test(clean) && /youtu/i.test(url)) {
+    return (
+      "يوتيوب رفض هذا الفيديو تحديداً بفحص «تأكيد أنك لست روبوتاً» " +
+      "(playabilityStatus = LOGIN_REQUIRED). هذا حكم يوتيوب على الطلب وليس عطلاً في المستخرج: " +
+      "فيديوهات أخرى تُحمَّل من نفس الجهاز بنجاح. " +
+      "السبيل المشروع الوحيد لهذا الفيديو هو جلسة موثّقة: ⚙️ الإعدادات ← «جلسة الكوكيز» ← ارفع cookies.txt " +
+      "مصدَّرة من متصفحك بعد تسجيل الدخول إلى يوتيوب. التطبيق لا يزوّر جلسة ولا يتجاوز أي قيد."
+    );
+  }
+  if (/confirm your age|age-restricted|age restricted/i.test(clean)) {
+    return "المحتوى مقيّد بالعمر. أضف ملف كوكيز لجلسة مسجّلة (⚙️ الإعدادات ← جلسة الكوكيز) إن كان لديك حق الوصول إليه.";
+  }
+  if (/sign in to confirm|please sign in/i.test(clean)) {
+    return "الموقع يطلب تسجيل الدخول. أضف ملف كوكيز من الإعدادات إن كان لديك حق الوصول إلى هذا المحتوى.";
   }
   // ---- الاحتياجات الموثقة بالمختبر (docs/platform-support.md) ----
   if (/empty media response|login required|rate-limit|429/i.test(clean) && /instagram/i.test(clean)) {
