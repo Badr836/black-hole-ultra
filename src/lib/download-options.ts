@@ -1,4 +1,5 @@
 import type { Settings } from "@/db/schema";
+import { effectiveCookiesPath } from "./cookies";
 
 /** Common resilience and optional authentication options for yt-dlp. */
 export function commonDownloadOptions(settings: Settings): string[] {
@@ -10,8 +11,9 @@ export function commonDownloadOptions(settings: Settings): string[] {
     "--file-access-retries",
     "3",
   ];
-  if (settings.cookiesPath?.trim()) {
-    args.push("--cookies", settings.cookiesPath.trim());
+  const cookiesPath = effectiveCookiesPath(settings.cookiesPath);
+  if (cookiesPath) {
+    args.push("--cookies", cookiesPath);
   } else if (settings.cookiesFromBrowser?.trim()) {
     args.push("--cookies-from-browser", settings.cookiesFromBrowser.trim());
   }

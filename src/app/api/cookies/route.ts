@@ -7,6 +7,9 @@ import {
   saveCookieFile,
 } from "@/lib/cookies";
 import { getSettings } from "@/lib/settings";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { settings as settingsTable } from "@/db/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,8 +39,15 @@ export async function POST(req: Request) {
   if (typeof body.content !== "string") {
     return NextResponse.json({ error: "أرسل محتوى الملف في الحقل content" }, { status: 400 });
   }
+  const s = await getSettings();
   const saved = saveCookieFile(body.content, body.path ?? null);
   if (!saved.ok) return NextResponse.json({ error: saved.reason }, { status: 400 });
+
+  // Persist the path the file was actually written to, so the analyzers and the
+  // download engine use it without the user having to type it into Settings.
+  if (!s.cookiesPath?.trim()) {
+    await db.update(settingsTable).set({ cookiesPath: saved.path, updatedAt: new Date() });
+  }
 
   const coverage = cookieCoverage(body.content);
   return NextResponse.json({

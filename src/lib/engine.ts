@@ -6,6 +6,7 @@ import { stat, unlink } from "node:fs/promises";
 import { db } from "@/db";
 import { downloads, type Download, type DownloadStatus, type Settings } from "@/db/schema";
 import { resolveBinary } from "./binaries";
+import { effectiveCookiesPath } from "./cookies";
 import { downloadDirect, isDirectFileUrl, probeDirect, type DirectProbe } from "./direct-http";
 import { failureCodeOf } from "./failure-reason";
 import { getSettings } from "./settings";
@@ -1604,7 +1605,7 @@ class DownloadEngine {
       "--http-timeout",
       "30",
       ...(s.speedLimit ? ["--limit-rate", s.speedLimit] : []),
-      ...(s.cookiesPath?.trim() ? ["--cookies", s.cookiesPath.trim()] : []),
+      ...(effectiveCookiesPath(s.cookiesPath) ? ["--cookies", effectiveCookiesPath(s.cookiesPath) as string] : []),
       ...(s.cookiesFromBrowser?.trim() ? ["--cookies-from-browser", s.cookiesFromBrowser.trim()] : []),
     ];
     if (d.playlistItems) {

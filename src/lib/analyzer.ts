@@ -5,6 +5,7 @@ import { commonDownloadOptions } from "./download-options";
 import { createLimiter, createTtlCache } from "./limiter";
 import { getJsRuntimes, jsRuntimeArgs, pickJsRuntime } from "./runtimes";
 import { platformHint, routeProvider } from "./providers";
+import { effectiveCookiesPath } from "./cookies";
 import {
   normalizeFormats,
   pickThumbnail,
@@ -210,7 +211,7 @@ async function analyzeWithGalleryDl(
     "-j",
     "--range",
     "1-1",
-    ...(s.cookiesPath?.trim() ? ["--cookies", s.cookiesPath.trim()] : []),
+    ...(effectiveCookiesPath(s.cookiesPath) ? ["--cookies", effectiveCookiesPath(s.cookiesPath) as string] : []),
     ...(s.cookiesFromBrowser?.trim() ? ["--cookies-from-browser", s.cookiesFromBrowser.trim()] : []),
     url,
   ];

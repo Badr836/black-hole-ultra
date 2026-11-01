@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cookieCoverage, parseCookieFile, validateCookieContent } from "../src/lib/cookies";
+import { cookieCoverage, effectiveCookiesPath, parseCookieFile, validateCookieContent } from "../src/lib/cookies";
 
 const FILE = `# Netscape HTTP Cookie File
 .instagram.com\tTRUE\t/\tTRUE\t1790000000\tsessionid\tabc123
@@ -51,4 +51,13 @@ test("a valid file passes validation with a count", () => {
   const result = validateCookieContent(FILE);
   assert.equal(result.ok, true);
   if (result.ok) assert.equal(result.count, 4);
+});
+
+test("an uploaded cookies file is used even when Settings never stored a path", () => {
+  // An explicit choice always wins, so a user can point at a file elsewhere.
+  assert.equal(effectiveCookiesPath("/srv/secret/my-cookies.txt"), "/srv/secret/my-cookies.txt");
+  // Blank/whitespace means "not set": fall back to the default location, and to
+  // null when nothing was uploaded (the tools must not be handed a dead path).
+  assert.equal(effectiveCookiesPath("   "), effectiveCookiesPath(null));
+  assert.equal(effectiveCookiesPath(null), effectiveCookiesPath(undefined));
 });

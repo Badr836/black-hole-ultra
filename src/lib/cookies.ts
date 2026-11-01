@@ -78,6 +78,27 @@ export function defaultCookiePath(): string {
   return path.join(process.cwd(), "data", "cookies.txt");
 }
 
+/**
+ * Which cookies file the tools should actually use.
+ *
+ * Bug this fixes: uploading a cookies file saved it to `data/cookies.txt`, but
+ * the analyzers only passed `--cookies` when `settings.cookiesPath` was set
+ * explicitly — so an uploaded file was silently ignored until the user typed the
+ * path by hand. Now an existing default file counts as "the user supplied it".
+ * An explicit path always wins, even if the file is missing (the tool's own
+ * error is clearer than silently falling back to a different file).
+ */
+export function effectiveCookiesPath(cookiesPath: string | null | undefined): string | null {
+  const explicit = cookiesPath?.trim();
+  if (explicit) return explicit;
+  const fallback = defaultCookiePath();
+  try {
+    return existsSync(fallback) ? fallback : null;
+  } catch {
+    return null;
+  }
+}
+
 export function readCookieFile(filePath?: string | null): string | null {
   const target = filePath?.trim() || defaultCookiePath();
   try {
