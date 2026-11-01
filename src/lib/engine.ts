@@ -1062,7 +1062,7 @@ class DownloadEngine {
       await job.writer.enqueue({
         status: "failed",
         error: errMsg,
-        failureCode: failureCodeOf(errMsg),
+        failureCode: failureCodeOf(`${rawLog || ""}\n${errMsg}`),
         log: rawLog || null,
         speed: null,
         eta: null,
