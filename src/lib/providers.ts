@@ -11,7 +11,7 @@
  * This module is pure (no child processes, no DB) so it is unit-testable.
  */
 
-export type ProviderId = "ytdlp" | "gallerydl" | "nm3u8dl";
+export type ProviderId = "ytdlp" | "gallerydl" | "nm3u8dl" | "http";
 
 export type ProviderAvailability = { ytdlp: boolean; gallerydl: boolean; nm3u8dl?: boolean };
 
@@ -59,7 +59,13 @@ export function routeProvider(
 ): RouteResult {
   const label = galleryHostLabel(url);
   const usable = (id: ProviderId): boolean =>
-    id === "ytdlp" ? availability.ytdlp : id === "gallerydl" ? availability.gallerydl : Boolean(availability.nm3u8dl);
+    id === "http"
+      ? true // direct file transport has no external binary
+      : id === "ytdlp"
+        ? availability.ytdlp
+        : id === "gallerydl"
+          ? availability.gallerydl
+          : Boolean(availability.nm3u8dl);
   const other = (id: ProviderId): ProviderId | null => {
     // HLS engine falls back to yt-dlp; yt-dlp falls back to gallery-dl.
     const candidates: ProviderId[] =

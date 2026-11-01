@@ -1,11 +1,13 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import path from "node:path";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { stat, unlink } from "node:fs/promises";
 import { db } from "@/db";
 import { downloads, type Download, type DownloadStatus, type Settings } from "@/db/schema";
 import { resolveBinary } from "./binaries";
+import { downloadDirect, isDirectFileUrl, probeDirect, type DirectProbe } from "./direct-http";
+import { failureCodeOf } from "./failure-reason";
 import { getSettings } from "./settings";
 import { needsFfmpeg, noFfmpegSelector } from "./format-selector";
 import { impersonationCaps, siteOptions, friendlyDownloadError } from "./site-options";
@@ -120,6 +122,12 @@ type Job = {
 
 class DownloadEngine {
   private jobs = new Map<number, Job>();
+  /**
+   * Direct-HTTP jobs own no child process: they stream in-process, so they need
+   * their own slot accounting (concurrency), pause/cancel signalling, and must
+   * not be confused with `jobs` (which is keyed by a live ChildProcess).
+   */
+  private directJobs = new Map<number, { abort: AbortController; pauseRequested: boolean; cancelRequested: boolean }>();
   private ticking = false;
   private pumpTimer: NodeJS.Timeout | null = null;
 
@@ -153,6 +161,23 @@ class DownloadEngine {
         .update(downloads)
         .set({ status: "paused", speed: null, eta: null, updatedAt: new Date() })
         .where(inArray(downloads.status, ["downloading", "converting"]));
+
+      // Direct-HTTP jobs that kept a verified partial file resume by themselves:
+      // the offset and the `.part` path are on the row, so no work is lost.
+      const paused = await db.select().from(downloads).where(eq(downloads.status, "paused"));
+      for (const row of paused) {
+        const offset = row.bytesOffset ?? 0;
+        if (offset > 0 && row.tempPath && existsSync(row.tempPath)) {
+          await db
+            .update(downloads)
+            .set({
+              status: "queued",
+              error: `استئناف تلقائي بعد إعادة تشغيل العامل من البايت ${offset}.`,
+              updatedAt: new Date(),
+            })
+            .where(eq(downloads.id, row.id));
+        }
+      }
 
       const completed = await db
         .select({ id: downloads.id, filePath: downloads.filePath })
@@ -189,7 +214,7 @@ class DownloadEngine {
     this.ticking = true;
     try {
       const s = await getSettings();
-      const free = Math.max(0, s.maxConcurrent - this.jobs.size);
+      const free = Math.max(0, s.maxConcurrent - (this.jobs.size + this.directJobs.size));
       if (free === 0) return;
       const queued = await db
         .select()
@@ -206,7 +231,7 @@ class DownloadEngine {
   }
 
   /** Compare-and-swap claim: only one caller can move queued → downloading. */
-  private claim(id: number, provider?: "ytdlp" | "gallerydl" | "nm3u8dl"): boolean {
+  private claim(id: number, provider?: "ytdlp" | "gallerydl" | "nm3u8dl" | "http"): boolean {
     const result = db
       .update(downloads)
       .set({
@@ -398,6 +423,22 @@ class DownloadEngine {
       }
       await this.startNm3u8dl(d, s, nm3u8dl, ffmpeg, route);
       return;
+    }
+
+    // Direct file URLs (a single .mp4/.mp3/... with a Range-capable server) get
+    // our own transport so the job can persist its byte offset + validators and
+    // truly resume. Anything else falls through to the extractor engines as before.
+    if (d.provider !== "gallerydl" && d.provider !== "nm3u8dl" && !d.playlist && isDirectFileUrl(d.url)) {
+      let probe: DirectProbe | null = null;
+      try {
+        probe = await probeDirect(d.url, { timeoutMs: 20_000 });
+      } catch {
+        probe = null; // probing is best-effort: never block the normal path
+      }
+      if (probe) {
+        await this.startDirectHttp(d, s, probe);
+        return;
+      }
     }
 
     const needsTools = needsFfmpeg({
@@ -698,6 +739,7 @@ class DownloadEngine {
         status: "failed",
         speed: null,
         eta: null,
+        failureCode: "rate_limit",
         error:
           "الموقع رفض الطلب بسبب حد المعدل (HTTP 429) — حظر مؤقت لعنوان IP هذا. أضف كوكيز جلسة من الإعدادات، أو انتظر من دقائق إلى ساعات، أو شغّل التطبيق من شبكة منزلية بدل شبكة مركز بيانات. لن تُعاد المحاولة تلقائياً الآن.",
         log: rawLog || null,
@@ -711,6 +753,7 @@ class DownloadEngine {
         status: "failed",
         speed: null,
         eta: null,
+        failureCode: "stalled",
         error: `توقّف المحرك عن إرسال أي بيانات لمدة ${Math.round(IDLE_TIMEOUT_MS / 60000)} دقيقة، فأُوقفت المهمة. الأسباب الشائعة: الكوكيز منتهية، أو الموقع يحجب هذا العنوان، أو الملف ضخم بلا استجابة.`,
         log: rawLog || null,
       });
@@ -869,6 +912,7 @@ class DownloadEngine {
           speed: null,
           eta: null,
           error: error instanceof Error ? error.message : "فشل إنهاء المهمة",
+          failureCode: failureCodeOf(error instanceof Error ? error.message : "فشل إنهاء المهمة"),
           log: redactLog(`${rawLog}\n${error instanceof Error ? error.stack ?? error.message : String(error)}`),
         });
       }
@@ -1009,7 +1053,14 @@ class DownloadEngine {
         eta: null,
       });
     } else {
-      await job.writer.enqueue({ status: "failed", error: errMsg, log: rawLog || null, speed: null, eta: null });
+      await job.writer.enqueue({
+        status: "failed",
+        error: errMsg,
+        failureCode: failureCodeOf(errMsg),
+        log: rawLog || null,
+        speed: null,
+        eta: null,
+      });
     }
     await job.writer.flush();
     this.schedulePump();
@@ -1021,6 +1072,175 @@ class DownloadEngine {
    * Used for direct HLS links where session headers matter, and as a fallback
    * when yt-dlp fails on `.m3u8`. DRM manifests are refused, never bypassed.
    */
+  /**
+   * Direct HTTP(S) file job: streamed to a `.part` file, resumed from the last
+   * verified byte when the server supports Range, validated with ETag /
+   * Last-Modified, and only published under its final name once the size checks
+   * out. Never reports progress it cannot measure.
+   */
+  private async startDirectHttp(d: Download, s: Settings, probe: DirectProbe): Promise<void> {
+    if (!this.claim(d.id, "http")) return;
+
+    const writer = this.makeWriter(d.id);
+    const controller = new AbortController();
+    const control = { abort: controller, pauseRequested: false, cancelRequested: false };
+    this.directJobs.set(d.id, control);
+
+    try {
+      const ext = directExtension(probe, d.container);
+      const rawTitle = d.title && d.title !== "Untitled" ? d.title : probe.fileName ?? "download";
+      const safeTitle = safeSaveName(rawTitle.replace(new RegExp(`\\.${ext}$`, "i"), ""));
+      const destPath = path.join(d.outputDir, `${safeTitle}.${ext}`);
+      const partPath = `${destPath}.part`;
+
+      // A stored validator that no longer matches the source means the bytes on
+      // disk belong to a different version of the file: discard, never splice.
+      const validatorChanged = Boolean(d.etag && probe.etag && d.etag !== probe.etag);
+      if (validatorChanged && existsSync(partPath)) {
+        try {
+          unlinkSync(partPath);
+        } catch {
+          /* a locked .part will simply fail the size check later */
+        }
+      }
+
+      const resumeFrom = validatorChanged ? 0 : (d.bytesOffset ?? 0);
+      await writer.enqueue({
+        status: "downloading",
+        provider: "http",
+        tempPath: partPath,
+        bytesOffset: resumeFrom > 0 ? resumeFrom : 0,
+        resumeSupported: probe.acceptRanges,
+        etag: probe.etag,
+        lastModified: probe.lastModified,
+        totalBytes: probe.size,
+        downloadedBytes: resumeFrom > 0 ? resumeFrom : 0,
+        progress: 0,
+        speed: null,
+        eta: null,
+        error: validatorChanged
+          ? "تغيّر الملف على المصدر (ETag مختلف) — بدأ التنزيل من الصفر."
+          : null,
+      });
+      await writer.flush();
+
+      let lastWrite = 0;
+      const result = await downloadDirect({
+        url: probe.url,
+        destPath,
+        partPath,
+        expectedEtag: probe.etag,
+        expectedLastModified: probe.lastModified,
+        expectedSize: probe.size,
+        maxAttempts: Math.max(2, s.maxRetries + 1),
+        signal: controller.signal,
+        onProgress: (p) => {
+          const now = Date.now();
+          if (now - lastWrite < 750) return;
+          lastWrite = now;
+          void writer.enqueue({
+            status: "downloading",
+            downloadedBytes: p.bytes,
+            bytesOffset: p.bytes,
+            totalBytes: p.total ?? probe.size ?? null,
+            // No total ⇒ no percentage. The UI shows bytes instead of a lie.
+            progress: p.total ? Math.min(99.9, (p.bytes / p.total) * 100) : 0,
+            speed: p.speedBps > 0 ? `${(p.speedBps / 1048576).toFixed(2)} MiB/s` : null,
+            eta: null,
+          });
+        },
+        refreshUrl: async () => {
+          const pageUrl =
+            typeof (d.metadata as Record<string, unknown> | null)?.pageUrl === "string"
+              ? String((d.metadata as Record<string, unknown>).pageUrl)
+              : null;
+          const ytdlp = resolveBinary("yt-dlp", s.ytdlpPath);
+          if (!pageUrl || !ytdlp) return null;
+          try {
+            const { stdout } = await runBinary(
+              ytdlp,
+              ["-g", "-f", d.formatSelector || "best", "--no-warnings", pageUrl],
+              { timeoutMs: 45_000 },
+            );
+            const fresh = stdout.split(/\r?\n/).map((line) => line.trim()).find((line) => /^https?:\/\//.test(line));
+            return fresh ?? null;
+          } catch {
+            return null;
+          }
+        },
+      });
+
+      if (result.ok) {
+        await writer.enqueue({
+          status: "completed",
+          provider: "http",
+          progress: 100,
+          speed: null,
+          eta: null,
+          error: null,
+          failureCode: null,
+          filePath: result.path,
+          fileName: path.basename(result.path),
+          files: [result.path],
+          totalBytes: result.bytes,
+          downloadedBytes: result.bytes,
+          bytesOffset: null,
+          tempPath: null,
+          etag: result.etag ?? probe.etag ?? null,
+          lastModified: result.lastModified ?? probe.lastModified ?? null,
+          resumeSupported: probe.acceptRanges,
+          completedAt: new Date(),
+        });
+        await writer.flush();
+        return;
+      }
+
+      if (result.reason === "aborted") {
+        await writer.enqueue(
+          control.cancelRequested
+            ? { status: "cancelled", speed: null, eta: null, bytesOffset: result.bytes }
+            : {
+                status: "paused",
+                speed: null,
+                eta: null,
+                bytesOffset: result.bytes,
+                error: "أُوقفت المهمة. سيستأنف التنزيل من آخر بايت محفوظ عند الاستئناف.",
+              },
+        );
+        await writer.flush();
+        return;
+      }
+
+      const message =
+        result.reason === "size"
+          ? `الملف غير مكتمل: ${result.message}. أعد المحاولة — سيستأنف من البايت المحفوظ.`
+          : result.reason === "http"
+            ? `فشل الطلب: ${result.message}`
+            : result.message;
+      await writer.enqueue({
+        status: "failed",
+        speed: null,
+        eta: null,
+        error: message,
+        failureCode: failureCodeOf(message),
+        bytesOffset: result.bytes,
+      });
+      await writer.flush();
+    } catch (error) {
+      await writer.enqueue({
+        status: "failed",
+        speed: null,
+        eta: null,
+        error: error instanceof Error ? error.message : "فشل غير متوقع في محرك التنزيل المباشر",
+        failureCode: failureCodeOf(error instanceof Error ? error.message : String(error)),
+      });
+      await writer.flush();
+    } finally {
+      this.directJobs.delete(d.id);
+      this.schedulePump();
+    }
+  }
+
   private async startNm3u8dl(
     d: Download,
     s: Settings,
@@ -1256,6 +1476,7 @@ class DownloadEngine {
         status: "failed",
         speed: null,
         eta: null,
+        failureCode: "stalled",
         error: `توقّف N_m3u8DL-RE عن إرسال أي بيانات لمدة ${Math.round(IDLE_TIMEOUT_MS / 60000)} دقيقة فأُوقفت المهمة.`,
         log: rawLog || null,
       });
@@ -1310,6 +1531,7 @@ class DownloadEngine {
         speed: null,
         eta: null,
         error: DRM_REFUSAL_MESSAGE,
+        failureCode: "drm",
         log: rawLog || null,
       });
       await job.writer.flush();
@@ -1335,7 +1557,14 @@ class DownloadEngine {
         eta: null,
       });
     } else {
-      await job.writer.enqueue({ status: "failed", error: message, log: rawLog || null, speed: null, eta: null });
+      await job.writer.enqueue({
+        status: "failed",
+        error: message,
+        failureCode: failureCodeOf(message),
+        log: rawLog || null,
+        speed: null,
+        eta: null,
+      });
     }
     await job.writer.flush();
     this.schedulePump();
@@ -1589,6 +1818,7 @@ class DownloadEngine {
     await writer.enqueue({
       status: "failed",
       error: message,
+      failureCode: failureCodeOf(message),
       log,
       speed: null,
       eta: null,
@@ -1598,6 +1828,12 @@ class DownloadEngine {
   }
 
   async pause(id: number) {
+    const direct = this.directJobs.get(id);
+    if (direct) {
+      direct.pauseRequested = true;
+      direct.abort.abort();
+      return;
+    }
     const job = this.jobs.get(id);
     if (job) {
       job.pausedByUser = true;
@@ -1623,6 +1859,16 @@ class DownloadEngine {
   }
 
   async cancel(id: number) {
+    const direct = this.directJobs.get(id);
+    if (direct) {
+      direct.cancelRequested = true;
+      direct.abort.abort();
+      await db
+        .update(downloads)
+        .set({ status: "cancelled", speed: null, eta: null, updatedAt: new Date() })
+        .where(eq(downloads.id, id));
+      return;
+    }
     const job = this.jobs.get(id);
     if (job) {
       job.cancelled = true;
@@ -1693,11 +1939,11 @@ class DownloadEngine {
   }
 
   isRunning(id: number) {
-    return this.jobs.has(id);
+    return this.jobs.has(id) || this.directJobs.has(id);
   }
 
   get activeCount() {
-    return this.jobs.size;
+    return this.jobs.size + this.directJobs.size;
   }
 
   async libraryStats() {
@@ -1787,3 +2033,32 @@ export type { DownloadStatus };
 
 const g = globalThis as typeof globalThis & { __bhEngine?: DownloadEngine };
 export const engine: DownloadEngine = g.__bhEngine ?? (g.__bhEngine = new DownloadEngine());
+
+/** Choose the on-disk extension for a direct download. */
+export function directExtension(probe: DirectProbe, fallback: string): string {
+  const fromUrl = (() => {
+    try {
+      const base = new URL(probe.url).pathname.split("/").pop() ?? "";
+      const dot = base.lastIndexOf(".");
+      return dot > 0 ? base.slice(dot + 1).toLowerCase() : "";
+    } catch {
+      return "";
+    }
+  })();
+  const fromName = probe.fileName && probe.fileName.includes(".")
+    ? probe.fileName.split(".").pop()!.toLowerCase()
+    : "";
+  const fromType = (() => {
+    const t = (probe.contentType ?? "").toLowerCase();
+    if (t.includes("mp4")) return "mp4";
+    if (t.includes("webm")) return "webm";
+    if (t.includes("matroska")) return "mkv";
+    if (t.includes("mpeg") && t.startsWith("audio")) return "mp3";
+    if (t.includes("audio/ogg")) return "ogg";
+    if (t.includes("image/jpeg")) return "jpg";
+    if (t.includes("image/png")) return "png";
+    return "";
+  })();
+  const candidate = fromUrl || fromName || fromType || fallback || "bin";
+  return /^[a-z0-9]{1,5}$/.test(candidate) ? candidate : "bin";
+}

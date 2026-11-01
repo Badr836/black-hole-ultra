@@ -106,6 +106,20 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE settings ADD COLUMN hls_codecs TEXT;
     `,
   },
+  {
+    // Direct-HTTP resume state + a stable failure taxonomy.
+    // Everything is additive, so old rows and old code keep working.
+    version: 6,
+    name: "direct-resume-and-failure-code",
+    sql: `
+      ALTER TABLE downloads ADD COLUMN bytes_offset INTEGER;
+      ALTER TABLE downloads ADD COLUMN temp_path TEXT;
+      ALTER TABLE downloads ADD COLUMN etag TEXT;
+      ALTER TABLE downloads ADD COLUMN last_modified TEXT;
+      ALTER TABLE downloads ADD COLUMN resume_supported INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE downloads ADD COLUMN failure_code TEXT;
+    `,
+  },
 ];
 
 export function currentVersion(sqlite: Database): number {

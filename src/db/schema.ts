@@ -13,7 +13,7 @@ export type DownloadStatus =
 /** "image" covers gallery-dl photo posts (Instagram/Pinterest/X images). */
 export type MediaKind = "video" | "audio" | "image";
 
-export type ProviderId = "ytdlp" | "gallerydl" | "nm3u8dl";
+export type ProviderId = "ytdlp" | "gallerydl" | "nm3u8dl" | "http";
 
 /**
  * Local-first storage. SQLite (better-sqlite3) replaces PostgreSQL so the app
@@ -57,6 +57,18 @@ export const downloads = sqliteTable(
     downloadedBytes: integer("downloaded_bytes"),
     retries: integer("retries").notNull().default(0),
     error: text("error"),
+    /**
+     * Direct-HTTP resume state (migration 6). `bytesOffset` is the last byte
+     * actually written to `tempPath`; `etag`/`lastModified` are the validators
+     * captured with those bytes, used to refuse a resume against changed content.
+     */
+    bytesOffset: integer("bytes_offset"),
+    tempPath: text("temp_path"),
+    etag: text("etag"),
+    lastModified: text("last_modified"),
+    resumeSupported: integer("resume_supported", { mode: "boolean" }).notNull().default(false),
+    /** Stable code from lib/failure-reason (why it failed, not just that it did). */
+    failureCode: text("failure_code"),
     log: text("log"),
     metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown> | null>(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
