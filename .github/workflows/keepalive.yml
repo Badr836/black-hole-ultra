@@ -1,0 +1,44 @@
+# حراسة تشغيل: يتأكد كل 30 دقيقة أن رابط التطبيق العام يستجيب،
+# وإن لم يستجب يوقظ الـ Codespace ويعيد تشغيل الخادم ويعيد المنفذ عاماً.
+# لا يعدّل أي كود من التطبيق — تشغيل فقط.
+name: keepalive
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+concurrency: keepalive
+jobs:
+  check-and-wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CS: bug-free-doodle-9pp5g77r4j4h7qp6
+      URL: https://bug-free-doodle-9pp5g77r4j4h7qp6-3000.app.github.dev/api/health
+      GH_TOKEN: ${{ secrets.CODESPACE_PAT }}
+    steps:
+      - name: هل الموقع يعمل؟
+        id: check
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 "$URL" || true)
+          echo "HTTP $code"
+          if [ "$code" = "200" ]; then echo "up=true" >> "$GITHUB_OUTPUT"; else echo "up=false" >> "$GITHUB_OUTPUT"; fi
+      - name: إيقاظ الـ Codespace وتشغيل التطبيق
+        if: steps.check.outputs.up != 'true'
+        run: |
+          set -x
+          gh api -X POST "/user/codespaces/$CS/start" || true
+          for i in $(seq 1 30); do
+            s=$(gh api "/user/codespaces/$CS" --jq .state || true)
+            [ "$s" = "Available" ] && break
+            sleep 10
+          done
+          gh cs ports visibility 3000:public -c "$CS" || true
+          gh cs ssh -c "$CS" -- "cd /workspaces/black-hole-ultra && bash .devcontainer/start.sh" || true
+          for i in $(seq 1 12); do
+            gh cs ports visibility 3000:public -c "$CS" || true
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 20 "$URL" || true)
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          echo "final HTTP $code"
+          [ "$code" = "200" ]
