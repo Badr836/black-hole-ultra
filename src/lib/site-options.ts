@@ -111,6 +111,10 @@ export function friendlyDownloadError(raw: string, url: string): string {
     return "يوتيوب رفض تسليم بيانات الفيديو (HTTP 403). هذا ليس عطلاً في التطبيق: غالباً العنوان محجوب مؤقتاً، أو يلزم كوكيز جلسة، أو يحتاج محرك JavaScript حديث. " +
       "جرّب: إضافة cookies.txt من الإعدادات، إعادة المحاولة بعد دقائق، أو شبكة أخرى. جُرّب أيضاً عميل android_vr تلقائياً إن كان متاحاً.";
   }
+  if (/does not look like a Netscape format cookies file/i.test(clean)) {
+    return "ملف الكوكيز المحفوظ ليس بصيغة Netscape (ترويسة الملف ناقصة أو الحقول غير مكتملة). " +
+      "أعد تصديره من متصفحك بإضافة تُنتج cookies.txt بصيغة Netscape (مثل «Get cookies.txt LOCALLY») ثم ارفعه من ⚙️ الإعدادات ← جلسة الكوكيز.";
+  }
   if (/requested format is not available/i.test(clean)) {
     return "الصيغة المطلوبة غير متاحة لهذا الرابط الآن. أعد التحليل واختر جودة أخرى.";
   }

@@ -134,3 +134,12 @@ test("a genuine age gate still says age", () => {
   );
   assert.match(message, /العمر/);
 });
+
+test("a malformed cookies file is explained without leaking server paths", () => {
+  const message = friendlyDownloadError(
+    "'/workspaces/app/data/cookies.txt' does not look like a Netscape format cookies file",
+    "https://www.youtube.com/watch?v=x",
+  );
+  assert.match(message, /Netscape/);
+  assert.doesNotMatch(message, /\/workspaces\//);
+});
