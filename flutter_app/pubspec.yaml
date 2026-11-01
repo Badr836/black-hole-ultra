@@ -1,0 +1,70 @@
+name: blackhole_ultra_downloader
+description: BlackHole Ultra Downloader — local yt-dlp + FFmpeg download manager (Android & Windows). No ads, no tracking.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State & storage
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+  sqflite: ^2.3.3
+  sqflite_common_ffi: ^2.3.3   # Windows SQLite
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # NOTE: the Android yt-dlp runtime is youtubedl-android (Kotlin/Java, added in
+  # android/app/build.gradle.kts and bridged over MethodChannel in MainActivity).
+  # The pub.dev package `youtube_dl_android` does not exist on pub.dev (nothing
+  # resolves for it), so it was removed here: it is not imported anywhere.
+
+  # Media player (Android + Windows)
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_video: ^1.0.5
+
+  # Notifications / background
+  # 19.x: the Windows desktop notification backend moved into
+  # flutter_local_notifications_windows; notification_service.dart already uses
+  # WindowsInitializationSettings/WindowsNotificationDetails, which only exist
+  # from 19.x onwards (17.x made the app fail to compile).
+  flutter_local_notifications: ^19.4.2
+  flutter_local_notifications_windows: ^1.0.3
+  flutter_foreground_task: ^8.10.4
+  permission_handler: ^11.3.1
+
+  # Folder picker (Android SAF + Windows dialog)
+  file_picker: ^8.1.2
+
+  # Windows helpers
+  window_manager: ^0.4.2
+  http: ^1.2.2
+  url_launcher: ^6.3.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  msix: ^3.16.8
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+
+# --- Windows MSIX packaging (flutter pub run msix:create) ---
+msix_config:
+  display_name: BlackHole Ultra Downloader
+  publisher_display_name: BlackHole
+  identity_name: com.blackhole.ultradownloader
+  msix_version: 1.0.0.0
+  logo_path: assets/icon.png
+  capabilities: internetClient, removableStorage
+  install_certificate: false
