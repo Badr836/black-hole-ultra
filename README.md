@@ -177,7 +177,21 @@ docs/agents/                 دورة الوكلاء الثلاثة (باني / 
 docs/qa-report.md            تقرير الفحص النهائي
 ```
 
-نسخة Flutter الأصلية موجودة في `flutter_app/` ولم تُلمس في هذه الدورة (تحتاج Flutter/Android SDK).
+نسخة Flutter الأصلية موجودة في `flutter_app/` (ويب + أندرويد + ويندوز). لا تحتاج Flutter SDK إلا لإعادة البناء.
+
+### تطبيق أندرويد (APK جاهز)
+
+- تنزيل مباشر: <https://github.com/Badr836/black-hole-ultra/releases/tag/v1.0.0-android>
+  (`app-arm64-v8a-release.apk` لأغلب الهواتف، و`app-release.apk` شامل لكل المعماريات).
+- عند اكتمال أي فيديو ينسخه التطبيق إلى `Movies/BlackHole` ويظهر في **معرض أندرويد**
+  عبر MediaStore (`GallerySaver.kt`)، على Android 10+ بـ `RELATIVE_PATH`+`IS_PENDING`،
+  وعلى Android 7–9 بـ `MediaScannerConnection`. لا يُحذف الملف الأصلي إلا بعد التحقق من النسخة.
+- إعادة البناء: `cd flutter_app && flutter pub get && flutter build apk --release`
+  (JDK 17، Android SDK 36، AGP 8.11.1، Kotlin 2.2.20 — كلها مضبوطة في `android/`).
+
+### التقارير
+
+في `docs/reports/`: ترقية المحرك، إصلاح يوتيوب، تكامل معرض أندرويد، الحالة العامة.
 
 ## الترخيص والاعتماديات
 
