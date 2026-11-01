@@ -428,10 +428,16 @@ class DownloadEngine {
     // Direct file URLs (a single .mp4/.mp3/... with a Range-capable server) get
     // our own transport so the job can persist its byte offset + validators and
     // truly resume. Anything else falls through to the extractor engines as before.
-    if (d.provider !== "gallerydl" && d.provider !== "nm3u8dl" && !d.playlist && isDirectFileUrl(d.url)) {
+    if (d.provider !== "gallerydl" && d.provider !== "nm3u8dl" && !d.playlist && !isHlsUrl(d.url)) {
       let probe: DirectProbe | null = null;
       try {
-        probe = await probeDirect(d.url, { timeoutMs: 20_000 });
+        // One HEAD/range probe. Page URLs (HTML) return null and fall through to
+        // the extractor untouched; a file URL — even without an extension, e.g.
+        // "…?file=1" serving application/octet-stream — is served by our transport.
+        probe = await probeDirect(d.url, {
+          timeoutMs: isDirectFileUrl(d.url) ? 20_000 : 10_000,
+          headers: directHeadersFrom(d, s),
+        });
       } catch {
         probe = null; // probing is best-effort: never block the normal path
       }
@@ -2033,6 +2039,13 @@ export type { DownloadStatus };
 
 const g = globalThis as typeof globalThis & { __bhEngine?: DownloadEngine };
 export const engine: DownloadEngine = g.__bhEngine ?? (g.__bhEngine = new DownloadEngine());
+
+/** Request headers for direct transfers (cookies are never sent cross-origin). */
+function directHeadersFrom(d: Download, s: Settings): Record<string, string> {
+  void d;
+  void s;
+  return { "User-Agent": "BlackHoleUltra/1.0 (+local)" };
+}
 
 /** Choose the on-disk extension for a direct download. */
 export function directExtension(probe: DirectProbe, fallback: string): string {
